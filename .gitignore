@@ -1,0 +1,11 @@
+# 真实配置与凭据（NapCat token / QQ 号 / 群号）只留在本地，不进公开仓库
+dsh-qq/cordis.patch.yml
+dsh-qq/cordis.patch.local.yml
+
+# 运行时状态
+dsh-qq/data/*
+!dsh-qq/data/.gitkeep
+
+# 依赖与日志
+node_modules/
+*.log
