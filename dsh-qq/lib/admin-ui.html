@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QQ Console</title>
+<style>
+  :root{
+    --bg:#070910; --panel:rgba(255,255,255,.035); --panel-solid:#11151f; --line:rgba(255,255,255,.075);
+    --text:#e9edf7; --muted:#8b95a8; --accent:#7c5cff; --accent2:#22d3ee;
+    --ok:#2fd47a; --warn:#ffb020; --bad:#ff5c74; --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--text); background:var(--bg);
+    font:14px/1.55 "Inter","Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+    background-image:
+      radial-gradient(900px 500px at 12% -10%, rgba(124,92,255,.20), transparent 60%),
+      radial-gradient(760px 420px at 100% 0%, rgba(34,211,238,.13), transparent 55%),
+      radial-gradient(600px 400px at 80% 110%, rgba(124,92,255,.10), transparent 60%);
+  }
+  .app{display:grid; grid-template-columns:236px 1fr; height:100vh}
+  /* ---------- sidebar ---------- */
+  aside{
+    border-right:1px solid var(--line); padding:18px 14px; display:flex; flex-direction:column; gap:6px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    backdrop-filter:blur(14px);
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 18px}
+  .brand .mark{
+    width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 8px 24px rgba(124,92,255,.35);
+  }
+  .brand b{font-size:15px; letter-spacing:.2px}
+  .brand span{display:block; font-size:11px; color:var(--muted); font-weight:500}
+  .nav{display:flex; flex-direction:column; gap:2px; margin-top:6px}
+  .nav button{
+    all:unset; cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px;
+    color:var(--muted); font-weight:500; transition:.16s; position:relative;
+  }
+  .nav button:hover{background:rgba(255,255,255,.05); color:var(--text)}
+  .nav button.active{background:linear-gradient(90deg, rgba(124,92,255,.22), rgba(34,211,238,.08)); color:#fff}
+  .nav button.active::before{content:""; position:absolute; left:-14px; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:linear-gradient(180deg,var(--accent),var(--accent2))}
+  .nav svg{width:17px;height:17px; flex:none; opacity:.9}
+  .side-foot{margin-top:auto; font-size:11px; color:var(--muted); padding:10px 10px 4px; line-height:1.7}
+  .side-foot a{color:#a9b4c8; text-decoration:none}
+  /* ---------- main ---------- */
+  main{overflow-y:auto; padding:22px 26px 46px}
+  main::-webkit-scrollbar{width:10px}
+  main::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09); border-radius:8px}
+  .topbar{
+    display:flex; align-items:center; gap:16px; padding:14px 18px; border-radius:var(--radius);
+    border:1px solid var(--line); background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    backdrop-filter:blur(14px); box-shadow:0 18px 40px rgba(0,0,0,.28); margin-bottom:20px;
+  }
+  .avatar{
+    width:52px;height:52px;border-radius:16px; object-fit:cover; flex:none;
+    background:linear-gradient(135deg,#2b3350,#1a2033); border:1px solid rgba(255,255,255,.12);
+  }
+  .who{display:flex; flex-direction:column; gap:3px; min-width:0}
+  .who .name{font-size:16px; font-weight:650; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .who .sub{font-size:12px; color:var(--muted)}
+  .status{display:inline-flex; align-items:center; gap:7px; font-size:12px; padding:4px 10px 4px 8px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.22)}
+  .dot{width:8px;height:8px;border-radius:50%; background:var(--bad); box-shadow:0 0 0 3px rgba(255,92,116,.14)}
+  .dot.ok{background:var(--ok); box-shadow:0 0 0 3px rgba(47,212,122,.16)}
+  .dot.warn{background:var(--warn); box-shadow:0 0 0 3px rgba(255,176,32,.16)}
+  .dot.pulse{animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,212,122,.45)}70%{box-shadow:0 0 0 8px rgba(47,212,122,0)}100%{box-shadow:0 0 0 0 rgba(47,212,122,0)}}
+  .spacer{flex:1}
+  .btn{
+    all:unset; cursor:pointer; padding:9px 15px; border-radius:11px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--text); transition:.16s; white-space:nowrap;
+  }
+  .btn:hover{background:rgba(255,255,255,.1); transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#5b8cff); border-color:transparent; box-shadow:0 10px 24px rgba(124,92,255,.32)}
+  .btn.primary:hover{box-shadow:0 14px 30px rgba(124,92,255,.42)}
+  .btn.ghost{background:transparent}
+  .btn.small{padding:6px 11px; font-size:12px; border-radius:9px}
+  .btn.danger{color:#ffb3be; border-color:rgba(255,92,116,.35)}
+  /* ---------- cards ---------- */
+  .grid{display:grid; gap:16px}
+  .stats{grid-template-columns:repeat(4, minmax(0,1fr))}
+  .card{transition:border-color .18s, transform .18s;
+    border:1px solid var(--line); border-radius:var(--radius); padding:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+    box-shadow:0 16px 36px rgba(0,0,0,.22);
+  }
+  .card:hover{border-color:rgba(124,92,255,.32)}
+  .card h3{margin:0 0 14px; font-size:13px; font-weight:650; letter-spacing:.4px; color:#c7d0e2; text-transform:uppercase}
+  .stat{display:flex; flex-direction:column; gap:6px}
+  .stat .k{font-size:11.5px; color:var(--muted); letter-spacing:.3px}
+  .stat .v{font-size:26px; font-weight:700; letter-spacing:-.5px; background:linear-gradient(135deg,#fff,#a9b6ff); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .stat .hint{font-size:11.5px; color:var(--muted)}
+  .row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .mono{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace; font-size:12.5px}
+  /* forms */
+  label.field{display:flex; flex-direction:column; gap:7px; font-size:12.5px; color:var(--muted); font-weight:500}
+  input[type=text],input[type=number],textarea,select{
+    width:100%; color:var(--text); background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:11px;
+    padding:10px 12px; font:inherit; outline:none; transition:.15s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:rgba(124,92,255,.6); box-shadow:0 0 0 3px rgba(124,92,255,.16)}
+  textarea{resize:vertical; min-height:260px; line-height:1.7; font-size:13px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; min-height:34px}
+  .chip{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 8px 6px 11px; border-radius:999px;
+    background:rgba(124,92,255,.14); border:1px solid rgba(124,92,255,.32); font-size:12.5px;
+  }
+  .chip button{all:unset; cursor:pointer; width:18px;height:18px;display:grid;place-items:center; border-radius:50%; color:#cfd6e6; background:rgba(255,255,255,.08)}
+  .chip button:hover{background:rgba(255,92,116,.4); color:#fff}
+  .empty{font-size:12.5px; color:var(--muted); padding:8px 0}
+  .switch{display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none}
+  .switch input{display:none}
+  .track{width:44px;height:25px;border-radius:999px; background:rgba(255,255,255,.12); position:relative; transition:.2s}
+  .track::after{content:""; position:absolute; top:3px; left:3px; width:19px;height:19px;border-radius:50%; background:#fff; transition:.2s}
+  .switch input:checked + .track{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .switch input:checked + .track::after{transform:translateX(19px)}
+  input[type=range]{-webkit-appearance:none; height:4px; border-radius:4px; background:rgba(255,255,255,.14); outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px;height:16px;border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 0 4px rgba(124,92,255,.18); cursor:pointer}
+  /* feed */
+  .feed{display:flex; flex-direction:column; gap:10px; max-height:420px; overflow:auto}
+  .item{border:1px solid var(--line); border-radius:14px; padding:11px 13px; background:rgba(255,255,255,.022)}
+  .item .meta{display:flex; gap:8px; align-items:center; font-size:11.5px; color:var(--muted); margin-bottom:5px}
+  .tag{padding:1px 7px; border-radius:6px; font-size:10.5px; letter-spacing:.3px; background:rgba(124,92,255,.18); color:#cfc6ff}
+  .tag.name{background:rgba(34,211,238,.14); color:#9be7f5}
+  .tag.chat{background:rgba(255,255,255,.08); color:#c3ccdd}
+  .bubble{background:rgba(124,92,255,.16); border:1px solid rgba(124,92,255,.3); padding:7px 11px; border-radius:12px; display:inline-block; margin-top:6px; font-size:13px}
+  /* usage bars */
+  .bars{display:flex; align-items:flex-end; gap:10px; height:140px; padding-top:8px}
+  .bar{flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; height:100%; justify-content:flex-end}
+  .bar .fill{width:100%; border-radius:9px 9px 4px 4px; background:linear-gradient(180deg,var(--accent),rgba(34,211,238,.45)); min-height:3px; transition:.3s}
+  .bar .lbl{font-size:10.5px; color:var(--muted)}
+  /* modal */
+  .overlay{position:fixed; inset:0; background:rgba(4,6,12,.72); backdrop-filter:blur(6px); display:none; place-items:center; z-index:50}
+  .overlay.show{display:grid}
+  .modal{width:min(420px,92vw); border-radius:22px; border:1px solid var(--line); background:linear-gradient(180deg,#171c29,#10141d); padding:22px; box-shadow:0 30px 80px rgba(0,0,0,.6); text-align:center}
+  .modal h2{margin:0 0 6px; font-size:17px}
+  .modal p{margin:0 0 16px; color:var(--muted); font-size:12.5px}
+  .qrbox{width:236px;height:236px;margin:0 auto 14px; border-radius:16px; background:#fff; display:grid; place-items:center; overflow:hidden; padding:10px}
+  .qrbox img{width:100%; height:100%; object-fit:contain; image-rendering:pixelated}
+  .qrbox .spin{color:#333; font-size:13px}
+  /* toast */
+  .toast{position:fixed; bottom:24px; left:50%; transform:translate(-50%,20px); opacity:0; transition:.25s; background:#1b2130; border:1px solid var(--line); padding:11px 18px; border-radius:12px; font-size:13px; box-shadow:0 18px 40px rgba(0,0,0,.5); z-index:60; pointer-events:none}
+  .toast.show{opacity:1; transform:translate(-50%,0)}
+  .toast.ok{border-color:rgba(47,212,122,.4)}
+  .toast.err{border-color:rgba(255,92,116,.45)}
+  .sect{display:none}
+  .sect.active{display:block}
+  .split{display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start}
+  @media (max-width:1080px){.stats{grid-template-columns:repeat(2,1fr)} .split{grid-template-columns:1fr}}
+  @media (max-width:760px){.app{grid-template-columns:1fr} aside{flex-direction:row; overflow:auto; align-items:center} .nav{flex-direction:row} .side-foot{display:none} .brand span{display:none}}
+  /* 嵌入模式（DSH 侧边框 iframe 用）：去掉左栏，导航变顶部横排 */
+  body.embed .app{grid-template-columns:1fr; height:100vh}
+  body.embed aside{flex-direction:row; align-items:center; gap:10px; border-right:0; border-bottom:1px solid var(--line); padding:8px 14px; overflow-x:auto}
+  body.embed .brand{padding:0 12px 0 0; gap:8px; flex:none}
+  body.embed .brand span{display:none}
+  body.embed .brand b{font-size:14px}
+  body.embed .nav{flex-direction:row; margin:0; gap:4px; flex:none}
+  body.embed .nav button{padding:8px 12px; white-space:nowrap}
+  body.embed .nav button.active::before{display:none}
+  body.embed .side-foot{display:none}
+  body.embed main{padding:16px 18px 32px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/></svg>
+      </div>
+      <div><b>QQ Console</b><span>dsh-qq 控制台</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-sect="overview" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>概览</button>
+      <button data-sect="persona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r=".8" fill="currentColor"/><circle cx="15" cy="9.5" r=".8" fill="currentColor"/></svg>人设</button>
+      <button data-sect="watch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>白名单</button>
+      <button data-sect="usage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>用量</button>
+      <button data-sect="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 14a1.7 1.7 0 0 0-1.6-1H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 7 3h.1A1.7 1.7 0 0 0 8.6 1.4V1a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 3a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 7v.1a1.7 1.7 0 0 0 1.6 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg>设置</button>
+    </nav>
+    <div class="side-foot">
+      <div id="footModel">模型：读取中…</div>
+      <div id="footEvent">事件：—</div>
+      <div style="margin-top:6px"><a href="#" id="refreshAll">刷新</a></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <img class="avatar" id="avatar" alt="avatar" src="" />
+      <div class="who">
+        <div class="name" id="nick">未登录</div>
+        <div class="sub" id="uinRow">—</div>
+      </div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">连接中…</span></div>
+      <div class="spacer"></div>
+      <button class="btn" id="btnStart" style="display:none">启动后端</button>
+      <button class="btn" id="btnLogin" style="display:none">扫码登录</button>
+      <label class="switch" title="自动接话总开关">
+        <input type="checkbox" id="autoToggle" />
+        <span class="track"></span>
+        <span style="font-size:12.5px;color:#c3ccdd">自动接话</span>
+      </label>
+    </div>
+
+    <!-- 概览 -->
+    <section class="sect active" id="sect-overview">
+      <div class="grid stats" style="margin-bottom:16px">
+        <div class="card stat"><div class="k">今日回复</div><div class="v" id="sReplies">0</div><div class="hint" id="sRepliesHint">条（含跳过 0 次）</div></div>
+        <div class="card stat"><div class="k">今日 Token</div><div class="v" id="sTokens">0</div><div class="hint" id="sTokensHint">输入 0 / 输出 0</div></div>
+        <div class="card stat"><div class="k">监听群</div><div class="v" id="sGroups">0</div><div class="hint">白名单外的群完全无视</div></div>
+        <div class="card stat"><div class="k">监听账号</div><div class="v" id="sUsers">0</div><div class="hint" id="sUsersHint">白名单为空 = 所有人</div></div>
+      </div>
+      <div class="split">
+        <div class="card">
+          <h3>最近决策</h3>
+          <div class="feed" id="feed"><div class="empty">还没有记录。群里 @ 一下它试试。</div></div>
+        </div>
+        <div class="card">
+          <h3>运行状态</h3>
+          <div class="row" style="justify-content:space-between"><span class="muted">事件接收</span><span class="mono" id="kEvent">—</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted">冷却 / 限流</span><span class="mono" id="kLimit">—</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted">最近回复</span><span class="mono" id="kLast">—</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted">模型</span><span class="mono" id="kModel">—</span></div>
+          <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted">后端</span><span class="mono" id="kBackend">—</span></div>
+          <div id="errBox" style="margin-top:14px;display:none" class="item">
+            <div class="meta">最近错误</div><div class="mono" id="errText" style="color:#ffb3be"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>快捷操作</h3>
+        <div class="row">
+          <button class="btn small" data-goto="persona">调人设 / 试说一句</button>
+          <button class="btn small" data-goto="watch">改白名单</button>
+          <button class="btn small" data-goto="usage">看今日用量</button>
+          <a class="btn small ghost" href="http://127.0.0.1:6099" target="_blank" rel="noreferrer">NapCat 控制台</a>
+          <button class="btn small ghost" id="refreshNow">立即刷新</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.7">
+          面板只监听本机 127.0.0.1。扫码登录、换人设、白名单、限流都在这里改，保存即生效（不用重启）。
+        </p>
+      </div>
+    </section>
+
+    <!-- 人设 -->
+    <section class="sect" id="sect-persona">
+      <div class="split">
+        <div class="card">
+          <h3>Persona 提示词</h3>
+          <label class="field">
+            <textarea id="personaText" spellcheck="false" placeholder="留空 = 使用内置的「用本人口吻代聊」人设"></textarea>
+          </label>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="savePersona">保存人设</button>
+            <button class="btn ghost" id="resetPersona">恢复默认</button>
+            <span class="muted" style="font-size:12px" id="personaCount">0 字</span>
+          </div>
+          <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.7">
+            这里写的就是模型每次回复时看到的开头指令。想让它更贫、更冷淡、加口癖、只回一两字，都写在这。
+            留空则回到内置人设（短句口语、禁止 AI 腔）。
+          </p>
+        </div>
+        <div class="card">
+          <h3>试说一句</h3>
+          <label class="field">模拟群友消息
+            <input type="text" id="testInput" placeholder="例如：在吗，今天去哪玩了" />
+          </label>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="runTest">生成回复（不发送）</button>
+          </div>
+          <div id="testOut" style="margin-top:16px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 白名单 -->
+    <section class="sect" id="sect-watch">
+      <div class="split">
+        <div class="card">
+          <h3>监听群</h3>
+          <div class="chips" id="groupChips"><span class="empty">未设置 = 所有群都接话（不推荐）</span></div>
+          <div class="row" style="margin-top:14px">
+            <input type="text" id="groupInput" placeholder="群号，例如 1017271626" style="flex:1;min-width:180px" />
+            <button class="btn small primary" id="addGroup">添加</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>监听账号（只理会这些人）</h3>
+          <div class="chips" id="userChips"><span class="empty">未设置 = 群里所有人说话都会处理</span></div>
+          <div class="row" style="margin-top:14px">
+            <input type="text" id="userInput" placeholder="QQ 号，例如 1061261631" style="flex:1;min-width:180px" />
+            <button class="btn small primary" id="addUser">添加</button>
+          </div>
+          <p class="muted" style="font-size:12px;margin:14px 0 0;line-height:1.7">
+            白名单是「与」关系：群在白名单里、且说话人在白名单里，才会被处理；两个都为空的时按默认（所有群 / 所有人）。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用量 -->
+    <section class="sect" id="sect-usage">
+      <div class="grid stats" style="margin-bottom:16px">
+        <div class="card stat"><div class="k">今日调用</div><div class="v" id="uCalls">0</div><div class="hint">次模型请求</div></div>
+        <div class="card stat"><div class="k">今日输入</div><div class="v" id="uIn">0</div><div class="hint">tokens</div></div>
+        <div class="card stat"><div class="k">今日输出</div><div class="v" id="uOut">0</div><div class="hint">tokens</div></div>
+        <div class="card stat"><div class="k">近 7 天</div><div class="v" id="uWeek">0</div><div class="hint" id="uWeekHint">tokens / 0 次</div></div>
+      </div>
+      <div class="split">
+        <div class="card">
+          <h3>近 7 天用量</h3>
+          <div class="bars" id="bars"></div>
+        </div>
+        <div class="card">
+          <h3>模型分布（今日）</h3>
+          <div id="modelList"><span class="empty">今天还没有调用</span></div>
+          <p class="muted" style="font-size:12px;margin:14px 0 0;line-height:1.7">
+            统计的是这个插件自己发起的调用（回复 + 自测）。数字来自每次请求返回的 usage，
+            DeepSeek 后台的账单以官方为准。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="sect" id="sect-settings">
+      <div class="split">
+        <div class="card">
+          <h3>触发与限流</h3>
+          <label class="field" style="margin-bottom:16px">闲聊接话概率 <span class="muted" id="chanceVal">15%</span>
+            <input type="range" id="chatChance" min="0" max="100" step="1" />
+          </label>
+          <div class="grid" style="grid-template-columns:1fr 1fr">
+            <label class="field">同群冷却（秒）<input type="number" id="cooldownSec" min="3" max="3600" /></label>
+            <label class="field">回复长度上限<input type="number" id="maxReplyChars" min="10" max="400" /></label>
+            <label class="field">每群每小时上限<input type="number" id="maxPerHourGroup" min="1" max="200" /></label>
+            <label class="field">全局每小时上限<input type="number" id="maxPerHourTotal" min="1" max="500" /></label>
+            <label class="field">上下文条数<input type="number" id="contextSize" min="4" max="60" /></label>
+          </div>
+          <div class="row" style="margin-top:16px"><button class="btn primary" id="saveSettings">保存设置</button></div>
+        </div>
+        <div class="card">
+          <h3>触发词</h3>
+          <div class="chips" id="aliasChips"></div>
+          <div class="row" style="margin-top:14px">
+            <input type="text" id="aliasInput" placeholder="例如 小白" style="flex:1;min-width:150px" />
+            <button class="btn small primary" id="addAlias">添加</button>
+          </div>
+          <p class="muted" style="font-size:12px;margin:14px 0 0;line-height:1.7">
+            群里出现这些词就算在叫机器人（另外被 @ 也一定回）。改完点上面的「保存设置」一起生效。
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <h2>扫码登录 QQ</h2>
+    <p id="loginHint">用手机 QQ 扫一扫，登录后这里会自动关闭</p>
+    <div class="qrbox" id="qrBox"><span class="spin">正在获取二维码…</span></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn small" id="refreshQr">刷新二维码</button>
+      <button class="btn small ghost" id="closeLogin">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+window.__QQ_API_BASE__ = '__API_BASE__';
+// 被 DSH 侧边框以 iframe 嵌入时，向父窗口报个到，父窗口据此判断该地址是否可用
+try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'dsh-qq-panel-ready', source: 'qq-console' }, '*'); } catch (e) {}
+if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
+const API_BASE = window.__QQ_API_BASE__ || '';
+const $ = (id) => document.getElementById(id);
+const state = { settings: null, editing: false, qrTimer: null, loginTimer: null };
+
+function toast(message, kind) {
+  const el = $('toast');
+  el.textContent = message;
+  el.className = 'toast show' + (kind ? ' ' + kind : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast'; }, 2600);
+}
+
+async function api(path, options) {
+  const response = await fetch(API_BASE + path, options);
+  const text = await response.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text.slice(0, 200) }; }
+  if (!response.ok || data.error) throw new Error(data.error || ('HTTP ' + response.status));
+  return data;
+}
+
+const post = (path, body) => api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+
+/* ---------- 导航 ---------- */
+document.querySelectorAll('#nav button').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('#nav button').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.sect').forEach((s) => s.classList.remove('active'));
+    button.classList.add('active');
+    $('sect-' + button.dataset.sect).classList.add('active');
+  });
+});
+
+/* ---------- 状态渲染 ---------- */
+function setStatus(kind, text) {
+  const dot = $('dot');
+  dot.className = 'dot' + (kind === 'ok' ? ' ok pulse' : kind === 'warn' ? ' warn' : '');
+  $('statusText').textContent = text;
+}
+
+function fmt(n) { return Number(n || 0).toLocaleString('zh-CN'); }
+
+function renderState(data) {
+  const account = data.account || {};
+  const bot = data.bot || {};
+  const settings = data.settings || {};
+  state.settings = settings;
+
+  const avatar = $('avatar');
+  const initial = (account.nick || account.uin || '?').trim().slice(0, 1).toUpperCase();
+  avatar.onerror = () => { avatar.onerror = null; avatar.src = initialAvatar(initial); };
+  if (account.uin) {
+    const src = 'https://q1.qlogo.cn/g?b=qq&nk=' + account.uin + '&s=160';
+    if (avatar.dataset.src !== src) { avatar.dataset.src = src; avatar.src = src; }
+    $('nick').textContent = account.nick || account.uin;
+    $('uinRow').textContent = 'QQ ' + account.uin + (account.loginPhase ? ' · ' + account.loginPhase : '');
+  } else {
+    avatar.removeAttribute('data-src');
+    avatar.src = initialAvatar(initial);
+    $('nick').textContent = '未登录';
+    $('uinRow').textContent = account.backendReachable ? '后端已连接，等待登录' : '后端未连接';
+  }
+  if (!account.backendReachable) setStatus('bad', '后端未连接');
+  else if (!account.loggedIn) setStatus('warn', '后端在线 · 未登录');
+  else setStatus('ok', '已连接');
+
+  $('btnStart').style.display = account.backendReachable ? 'none' : '';
+  $('btnLogin').style.display = account.backendReachable && !account.loggedIn ? '' : 'none';
+  $('autoToggle').checked = !!bot.enabled;
+
+  const todayUsage = (data.usage && data.usage.today) || {};
+  $('sReplies').textContent = fmt(todayUsage.replies || 0);
+  $('sRepliesHint').textContent = '条（本次跳过 ' + fmt(bot.skips || 0) + ' 次）';
+  const today = (data.usage && data.usage.today) || { inputTokens: 0, outputTokens: 0, calls: 0 };
+  const tokens = (today.inputTokens || 0) + (today.outputTokens || 0);
+  $('sTokens').textContent = fmt(tokens);
+  $('sTokensHint').textContent = '输入 ' + fmt(today.inputTokens) + ' / 输出 ' + fmt(today.outputTokens);
+  $('sGroups').textContent = fmt((settings.groups || []).length) || '全部';
+  const users = settings.watchUsers || [];
+  $('sUsers').textContent = users.length ? fmt(users.length) : '全部';
+  $('sUsersHint').textContent = users.length ? '只理会名单里的 QQ' : '白名单为空 = 所有人';
+
+  const event = data.event || {};
+  $('kEvent').textContent = '收到 ' + (event.received || 0) + ' · 处理 ' + (event.accepted || 0) + (event.rejected ? ' · 拒绝 ' + event.rejected : '');
+  $('kLimit').textContent = (bot.cooldownSec || 0) + 's / 群 ' + ((bot.limits && bot.limits.perGroupPerHour) || '-') + ' · 总 ' + ((bot.limits && bot.limits.totalPerHour) || '-');
+  $('kLast').textContent = bot.lastReplyAt || '—';
+  $('kModel').textContent = (data.model && data.model.label) || '—';
+  $('kBackend').textContent = account.backendReachable ? 'napcat ' + (data.version || '') : '离线';
+  $('footModel').textContent = '模型：' + ((data.model && data.model.label) || '—');
+  $('footEvent').textContent = '事件：收到 ' + (event.received || 0) + ' / 拒绝 ' + (event.rejected || 0);
+  if (bot.lastError) { $('errBox').style.display = ''; $('errText').textContent = bot.lastError; }
+  else $('errBox').style.display = 'none';
+
+  renderFeed(bot.decisions || []);
+  renderUsage(data.usage || {});
+  if (!state.editing) fillSettings(settings);
+}
+
+function renderFeed(list) {
+  const feed = $('feed');
+  if (!list.length) { feed.innerHTML = '<div class="empty">还没有记录。群里 @ 一下它试试。</div>'; return; }
+  feed.innerHTML = list.map((item) => {
+    const kindLabel = item.kind === 'mention' ? '@我' : item.kind === 'name' ? '叫名字' : '闲聊';
+    const body = item.reply
+      ? '<div class="bubble">' + escapeHtml(item.reply) + '</div>'
+      : '<div class="muted" style="font-size:12.5px;margin-top:4px">' + (item.skipped ? '跳过（' + escapeHtml(item.skipped) + '）' : item.error ? '失败：' + escapeHtml(item.error) : '—') + '</div>';
+    return '<div class="item"><div class="meta"><span class="tag ' + (item.kind || '') + '">' + kindLabel + '</span><span>' + escapeHtml(item.sender || '') + '</span><span>' + escapeHtml(item.at || '') + '</span></div>' +
+      '<div style="font-size:13px;color:#cfd6e6">' + escapeHtml(item.text || '') + '</div>' + body + '</div>';
+  }).join('');
+}
+
+function renderUsage(usage) {
+  const today = usage.today || { calls: 0, inputTokens: 0, outputTokens: 0, models: {} };
+  $('uCalls').textContent = fmt(today.calls);
+  $('uIn').textContent = fmt(today.inputTokens);
+  $('uOut').textContent = fmt(today.outputTokens);
+  const week = usage.week || { calls: 0, inputTokens: 0, outputTokens: 0 };
+  $('uWeek').textContent = fmt((week.inputTokens || 0) + (week.outputTokens || 0));
+  $('uWeekHint').textContent = 'tokens / ' + fmt(week.calls) + ' 次';
+  const days = usage.days || [];
+  const max = Math.max(1, ...days.map((d) => (d.inputTokens || 0) + (d.outputTokens || 0)));
+  $('bars').innerHTML = days.map((d) => {
+    const total = (d.inputTokens || 0) + (d.outputTokens || 0);
+    const height = Math.max(3, Math.round((total / max) * 108));
+    const label = (d.date || '').slice(5);
+    return '<div class="bar" title="' + d.date + '：' + fmt(total) + ' tokens / ' + fmt(d.calls) + ' 次">' +
+      '<div class="fill" style="height:' + height + 'px;opacity:' + (total ? 1 : .25) + '"></div>' +
+      '<div class="lbl">' + label + '</div></div>';
+  }).join('');
+  const models = Object.entries(today.models || {});
+  $('modelList').innerHTML = models.length
+    ? models.map(([name, count]) => '<div class="row" style="justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span class="mono">' + escapeHtml(name) + '</span><span class="muted">' + fmt(count) + ' 次</span></div>').join('')
+    : '<span class="empty">今天还没有调用</span>';
+}
+
+function escapeHtml(text) {
+  return String(text == null ? '' : text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** 网络头像拿不到时用首字母渐变块兜底。 */
+function initialAvatar(text) {
+  const ch = String(text || '?').slice(0, 1);
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='104' height='104'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#7c5cff'/><stop offset='1' stop-color='#22d3ee'/></linearGradient></defs>" +
+    "<rect width='104' height='104' fill='url(#g)'/>" +
+    "<text x='52' y='72' font-size='48' font-family='Segoe UI,PingFang SC,sans-serif' font-weight='600' fill='white' text-anchor='middle'>" + ch + '</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+/* ---------- 表单 ---------- */
+function fillSettings(settings) {
+  const persona = $('personaText');
+  if (document.activeElement !== persona) persona.value = settings.persona || '';
+  $('personaCount').textContent = (persona.value || '').length + ' 字';
+  $('chatChance').value = Math.round((settings.chatChance || 0) * 100);
+  $('chanceVal').textContent = Math.round((settings.chatChance || 0) * 100) + '%';
+  $('cooldownSec').value = settings.cooldownSec || 25;
+  $('maxReplyChars').value = settings.maxReplyChars || 80;
+  $('maxPerHourGroup').value = settings.maxPerHourGroup || 8;
+  $('maxPerHourTotal').value = settings.maxPerHourTotal || 30;
+  $('contextSize').value = settings.contextSize || 14;
+  renderChips('groupChips', settings.groups || [], '未设置 = 所有群都接话（不推荐）', removeGroup);
+  renderChips('userChips', settings.watchUsers || [], '未设置 = 群里所有人说话都会处理', removeUser);
+  renderChips('aliasChips', settings.aliases || [], '还没有触发词', removeAlias);
+}
+
+function renderChips(id, list, emptyText, onRemove) {
+  const box = $(id);
+  if (!list.length) { box.innerHTML = '<span class="empty">' + emptyText + '</span>'; return; }
+  box.innerHTML = '';
+  list.forEach((value) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = '<span>' + escapeHtml(value) + '</span>';
+    const button = document.createElement('button');
+    button.textContent = '×';
+    button.title = '移除';
+    button.onclick = () => onRemove(value);
+    chip.appendChild(button);
+    box.appendChild(chip);
+  });
+}
+
+async function saveSettings(patch) {
+  const result = await post('/api/settings', patch);
+  state.settings = result.settings;
+  toast('已保存并即时生效', 'ok');
+  refresh();
+  return result;
+}
+
+function removeGroup(value) { saveSettings({ groups: (state.settings.groups || []).filter((v) => v !== value) }); }
+function removeUser(value) { saveSettings({ watchUsers: (state.settings.watchUsers || []).filter((v) => v !== value) }); }
+function removeAlias(value) { saveSettings({ aliases: (state.settings.aliases || []).filter((v) => v !== value) }); }
+
+$('addGroup').onclick = () => {
+  const value = $('groupInput').value.trim();
+  if (!value) return;
+  $('groupInput').value = '';
+  saveSettings({ groups: [...new Set([...(state.settings.groups || []), value])] });
+};
+$('addUser').onclick = () => {
+  const value = $('userInput').value.trim();
+  if (!value) return;
+  $('userInput').value = '';
+  saveSettings({ watchUsers: [...new Set([...(state.settings.watchUsers || []), value])] });
+};
+$('addAlias').onclick = () => {
+  const value = $('aliasInput').value.trim();
+  if (!value) return;
+  $('aliasInput').value = '';
+  saveSettings({ aliases: [...new Set([...(state.settings.aliases || []), value])] });
+};
+
+$('savePersona').onclick = () => saveSettings({ persona: $('personaText').value });
+$('resetPersona').onclick = () => { $('personaText').value = ''; saveSettings({ persona: '' }); };
+$('personaText').addEventListener('input', (event) => { $('personaCount').textContent = event.target.value.length + ' 字'; });
+$('personaText').addEventListener('focus', () => { state.editing = true; });
+$('personaText').addEventListener('blur', () => { state.editing = false; });
+
+$('chatChance').oninput = (event) => { $('chanceVal').textContent = event.target.value + '%'; };
+$('saveSettings').onclick = () => saveSettings({
+  chatChance: Number($('chatChance').value) / 100,
+  cooldownSec: Number($('cooldownSec').value),
+  maxReplyChars: Number($('maxReplyChars').value),
+  maxPerHourGroup: Number($('maxPerHourGroup').value),
+  maxPerHourTotal: Number($('maxPerHourTotal').value),
+  contextSize: Number($('contextSize').value),
+  aliases: state.settings.aliases || [],
+});
+
+$('autoToggle').onchange = async (event) => {
+  await post('/api/bot', { enabled: event.target.checked });
+  toast(event.target.checked ? '自动接话已开启' : '自动接话已关闭', 'ok');
+};
+
+$('runTest').onclick = async () => {
+  const text = $('testInput').value.trim();
+  if (!text) { toast('先写一句群友消息', 'err'); return; }
+  $('testOut').innerHTML = '<span class="muted">正在生成…</span>';
+  try {
+    const result = await post('/api/test', { text });
+    $('testOut').innerHTML = '<div class="meta muted" style="font-size:12px;margin-bottom:6px">生成耗时 ' + result.delayMs + ' ms</div>' +
+      '<div class="bubble" style="font-size:14px">' + escapeHtml(result.reply || '(空)') + '</div>';
+  } catch (error) {
+    $('testOut').innerHTML = '<span style="color:#ffb3be;font-size:12.5px">' + escapeHtml(error.message) + '</span>';
+  }
+};
+
+/* ---------- 登录 ---------- */
+async function openLogin() {
+  $('loginOverlay').classList.add('show');
+  await loadQr();
+  clearInterval(state.loginTimer);
+  state.loginTimer = setInterval(async () => {
+    try {
+      const status = await api('/api/login/status');
+      if (status.loggedIn) {
+        clearInterval(state.loginTimer);
+        $('loginOverlay').classList.remove('show');
+        toast('登录成功', 'ok');
+        refresh();
+      }
+    } catch { /* 后端没起来就先等 */ }
+  }, 2000);
+}
+
+let qrRetryTimer = null;
+
+function renderQrFailure(message, hint) {
+  const box = $('qrBox');
+  box.innerHTML =
+    '<div style="text-align:center;color:#333;font-size:12px;line-height:1.7;padding:8px">' +
+    '<div style="font-weight:600;margin-bottom:6px">二维码没生成</div>' +
+    '<div style="color:#c33">' + escapeHtml(message || '未知错误') + '</div>' +
+    (hint ? '<div style="margin-top:8px;color:#666">' + escapeHtml(hint) + '</div>' : '') +
+    '<div style="margin-top:10px"><button type="button" id="qrRetry" style="all:unset;cursor:pointer;padding:5px 12px;border-radius:8px;background:#eee;color:#333">重试</button></div>' +
+    '</div>';
+  const retry = document.getElementById('qrRetry');
+  if (retry) retry.onclick = () => loadQr();
+}
+
+async function loadQr() {
+  const box = $('qrBox');
+  box.innerHTML = '<span class="spin">正在获取二维码…</span>';
+  try {
+    const result = await post('/api/login/qrcode');
+    if (result.loggedIn) {
+      box.innerHTML = '<span class="spin" style="color:#2a7">已经登录了</span>';
+      $('loginHint').textContent = '当前账号已登录，不需要扫码。';
+      return;
+    }
+    if (result.ok === false && !result.imageReady) {
+      renderQrFailure(result.error, result.hint);
+      $('loginHint').textContent = result.hint || '二维码没生成，可以点下面的「刷新二维码」重试。';
+      return;
+    }
+    // ok:false 但磁盘上有 NapCat 控制台写出来的 qrcode.png 时，照样展示它（可能已过期）。
+    $('loginHint').textContent = result.ok === false
+      ? '注意：' + (result.error || '二维码接口失败') + '；下面是最近一次生成的二维码，过期就点「刷新二维码」。'
+      : '用手机 QQ 扫一扫，登录后这里会自动关闭';
+    box.innerHTML = '<img alt="二维码" src="' + API_BASE + '/api/login/qr.png?t=' + Date.now() + '" onerror="this.parentNode.innerHTML=\'<span class=spin>图片还没写出来，点刷新重试</span>\'" />';
+    clearTimeout(qrRetryTimer);
+    qrRetryTimer = setTimeout(() => { if ($('loginOverlay').classList.contains('show')) loadQr(); }, 60000);
+  } catch (error) {
+    renderQrFailure(error.message);
+  }
+}
+
+$('btnLogin').onclick = openLogin;
+$('btnStart').onclick = async () => {
+  const button = $('btnStart');
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = '启动中…';
+  toast('正在提权启动 NapCat（最多等 45 秒）…');
+  try {
+    const result = await post('/api/backend/start');
+    if (!result.ok) {
+      toast(result.reason || '后端没起来', 'err');
+      return;
+    }
+    toast('后端已就绪，检查登录状态…', 'ok');
+    const fresh = await api('/api/state');
+    renderState(fresh);
+    if (fresh.account.loggedIn) {
+      toast('已登录：' + (fresh.account.nick || fresh.account.uin), 'ok');
+    } else {
+      openLogin();
+    }
+  } catch (error) {
+    toast(error.message, 'err');
+  } finally {
+    button.disabled = false;
+    button.textContent = '启动后端';
+  }
+};
+$('refreshQr').onclick = loadQr;
+$('closeLogin').onclick = () => { clearInterval(state.loginTimer); $('loginOverlay').classList.remove('show'); };
+$('loginOverlay').addEventListener('click', (event) => { if (event.target === $('loginOverlay')) $('closeLogin').click(); });
+
+/* ---------- 轮询 ---------- */
+async function refresh() {
+  try {
+    const data = await api('/api/state');
+    renderState(data);
+  } catch (error) {
+    setStatus('bad', '面板连不上插件');
+    $('kBackend').textContent = error.message;
+  }
+}
+$('refreshAll').onclick = (event) => { event.preventDefault(); refresh(); toast('已刷新'); };
+document.querySelectorAll('[data-goto]').forEach((button) => {
+  button.onclick = () => {
+    const target = button.dataset.goto;
+    const navButton = document.querySelector('#nav button[data-sect=' + target + ']');
+    if (navButton) navButton.click();
+  };
+});
+$('refreshNow').onclick = () => { refresh(); toast('已刷新'); };
+refresh();
+setInterval(() => { if (!document.hidden) refresh(); }, 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="QQ Messenger">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b8cff"/>
+      <stop offset="1" stop-color="#12c2c2"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e6f4ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="60" fill="url(#bg)"/>
+  <path d="M128 52c-38.7 0-70 25.6-70 57.2 0 18.2 10.4 34.4 26.7 45-1.9 8.4-6.6 15.9-13.2 21.4-2.5 2.1-1.2 6.2 2.1 6.6 13.6 1.6 26.1-2.3 35.6-9 6.2 1.1 12.6 1.7 19.2 1.7 38.7 0 70-25.6 70-57.2S166.7 52 128 52z" fill="url(#bubble)"/>
+  <circle cx="96" cy="108" r="9" fill="#2b8cff"/>
+  <circle cx="128" cy="108" r="9" fill="#2b8cff"/>
+  <circle cx="160" cy="108" r="9" fill="#2b8cff"/>
+  <path d="M96 152h64" stroke="#2b8cff" stroke-width="10" stroke-linecap="round" opacity="0.55"/>
+  <path d="M188 176c9-11 14-23.5 14-36" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.35"/>
+</svg>

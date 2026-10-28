@@ -1,0 +1,55 @@
+# dsh-qq 配置示例：复制成 cordis.patch.yml 后按你的环境填写。
+#
+# 配置项（全部可省略，缺省值见 lib/config.js）：
+#   baseUrl       NapCat / OneBot11 的 HTTP API 根地址
+#   accessToken   与 NapCat 里配置的 token 一致（留空表示不校验）
+#   timeoutMs     单次 API 调用超时（毫秒）
+#   launcherPath  NapCat 的 launcher.bat / napcat.bat，供 qq_backend start 使用
+#   startTimeoutMs 等待后端起来的超时（毫秒）
+#
+# 自动接话（qq_bot 工具）：
+#   autoReply      是否开启自动接话
+#   groups         生效的群号列表；'*' 表示所有群
+#   aliases        触发用的名字（群里叫到这些词就算在叫机器人）
+#   chatChance     没被 @ 时按概率接话（0~1）
+#   cooldownSec    同一群两次回复的最小间隔（秒）
+#   maxPerHourGroup / maxPerHourTotal  限流
+#   maxReplyChars  回复长度上限
+#   contextSize    喂给模型的群聊上下文条数
+#   persona        自定义人设提示词（空 = 内置「用本人昵称的口吻代聊」）
+#   eventPort      NapCat 事件推送（httpClients）监听端口
+#   eventToken     事件推送的校验 token（NapCat 的 httpClients 不带 Authorization，建议留空）
+#
+# 覆盖方式（用户 profile 的 cordis.patch.yml）：按 id 覆盖整行 config。
+# 本文件是公开模板，token / QQ 号 / 群号一律用占位符，别把真实值提交上来。
+- insert:
+    - id: qq
+      name: 'dsh-qq'
+      config:
+        baseUrl: 'http://127.0.0.1:3000'
+        accessToken: 'YOUR_ONEBOT_TOKEN'
+        timeoutMs: 15000
+        launcherPath: 'C:\NapCat\launcher.bat'
+        startTimeoutMs: 120000
+        autoReply: true
+        groups:
+          - 'YOUR_GROUP_ID'
+        aliases:
+          - '小白'
+          - '机器人'
+          - '小助手'
+        chatChance: 0.15
+        cooldownSec: 25
+        maxPerHourGroup: 8
+        maxPerHourTotal: 30
+        maxReplyChars: 80
+        contextSize: 14
+        persona: ''
+        eventPort: 3012
+        eventToken: ''
+        watchUsers: []
+        adminPort: 3014
+        napcatWebuiUrl: 'http://127.0.0.1:6099'
+        napcatWebuiConfig: 'C:\NapCat\config\webui.json'
+        qrcodePath: 'C:\NapCat\cache\qrcode.png'
+        loginAccount: 'YOUR_QQ_NUMBER'
